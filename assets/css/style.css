@@ -681,3 +681,35 @@ html.motion-disabled [data-reveal] { opacity: 1 !important; translate: none !imp
 
 /* A clear diagnosis when a local browser has JavaScript disabled. */
 .js-required { position:relative;z-index:400;padding:11px 18px;background:#13181d;color:#fff;text-align:center;font-size:12px; }
+
+/* v5 — automatic animations and smooth page navigation */
+.page-curtain { position:fixed; inset:0; z-index:9999; pointer-events:none; background:#fbfbfc; opacity:0; transition:opacity .44s cubic-bezier(.22,1,.36,1); }
+html.page-leaving .page-curtain, html.page-entering .page-curtain { opacity:1; }
+html.page-leaving body > :not(.page-curtain) { opacity:.55; transform:translateY(-14px); transition:opacity .44s ease,transform .44s cubic-bezier(.22,1,.36,1); }
+html.page-entering body > :not(.page-curtain) { opacity:.65; transform:translateY(12px); }
+
+/* N1 design image: keep the robot fully framed instead of cropped at the top. */
+.model-details__visual img { object-fit: contain; object-position: center center; padding: 24px 12px; }
+
+/* v8: N1 image framing and technology showcase crop fixes */
+.model-details__visual { min-height: 440px; display:flex; align-items:center; justify-content:center; }
+.model-details__visual img { width:100%; height:440px; object-fit:contain; object-position:center center; padding:20px 32px; transform:none !important; }
+.technology-showcase { min-height:520px; }
+.technology-showcase__image { top:0; bottom:0; right:8%; width:57%; height:100%; overflow:hidden; mask-image:linear-gradient(90deg,transparent 0%,#000 16%,#000 82%,transparent 100%); -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 16%,#000 82%,transparent 100%); }
+.technology-showcase__image img { width:100%; height:100%; object-fit:contain; object-position:center center; transform:none !important; filter:saturate(.75) contrast(1.04); }
+@media(max-width:900px) { .technology-showcase__image { width:85%; right:0; top:220px; height:340px; } .technology-showcase__image img { object-fit:contain; } }
+@media(max-width:600px) { .model-details__visual { min-height:320px; } .model-details__visual img { height:320px; padding:12px; } .technology-showcase__image { top:245px; height:290px; } }
+
+/* v9: Use the complete portrait asset, not the source image with a cropped head. */
+.model-details__visual { height: 460px; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.model-details__visual img { display:block; width:auto; max-width:100%; height:100%; max-height:100%; padding:14px 20px 0; object-fit:contain; object-position:center center; transform:none!important; }
+.technology-showcase { min-height:540px; }
+.technology-showcase__image { top:0; bottom:0; right:9%; width:49%; height:100%; overflow:hidden; mask-image:none; -webkit-mask-image:none; }
+.technology-showcase__image img { width:100%; height:100%; object-fit:contain; object-position:center center; transform:none!important; filter:none; }
+@media(max-width:900px) { .technology-showcase__image { top:190px; right:0; width:70%; height:320px; } }
+@media(max-width:600px) { .model-details__visual { height:330px; } .model-details__visual img { height:100%; padding:10px 10px 0; } .technology-showcase__image { top:240px; right:0; width:100%; height:290px; } }
+
+/* v10 — compact interactive photo galleries */
+/* Single product image — no gallery controls. */
+.model-details__visual.single-photo { height:clamp(300px,32vw,450px); display:flex; align-items:center; justify-content:center; overflow:hidden; border-radius:18px; background:linear-gradient(140deg,#f2f5f7,#fafbfc); }
+.model-details__visual.single-photo img { width:100%; height:100%; object-fit:contain; object-position:center; }

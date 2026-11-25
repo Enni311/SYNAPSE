@@ -50,17 +50,7 @@
     const sectionIDs = ['hero', 'robots', 'technology', 'solutions', 'research', 'news', 'about', 'contact'];
     const sections = sectionIDs.map((id) => document.getElementById(id)).filter(Boolean);
     const isHome = sections.length === sectionIDs.length;
-    const motionPreferenceKey = 'synapse-animations-v3';
-    const motionControl = document.createElement('button');
-    motionControl.type = 'button';
-    motionControl.className = 'motion-control';
-    motionControl.setAttribute('aria-label', 'Увімкнути або вимкнути анімації сайту');
-    motionControl.innerHTML = '<span class="motion-control__dot" aria-hidden="true"></span><span class="motion-control__text"></span>';
-    document.body.appendChild(motionControl);
-
-    let storedMotion = null;
-    try { storedMotion = localStorage.getItem(motionPreferenceKey); } catch (_) { /* file: privacy modes */ }
-    let motionEnabled = storedMotion === 'on' || (storedMotion !== 'off' && !reducedMotion.matches);
+    let motionEnabled = true;
     let revealObserver = null;
     let scrollFrame = 0;
     let scrollTween = 0;
@@ -94,61 +84,57 @@
         });
     }
 
-    function setMotion(enabled, save = false) {
+    function setMotion(enabled) {
         motionEnabled = enabled;
         root.classList.toggle('motion-active', enabled);
         root.classList.toggle('motion-disabled', !enabled);
-        root.classList.toggle('motion-opt-in', enabled && reducedMotion.matches);
-        motionControl.setAttribute('aria-pressed', String(enabled));
-        motionControl.querySelector('.motion-control__text').textContent = enabled ? 'Анімації увімк.' : 'Анімації вимк.';
-        if (save) {
-            try { localStorage.setItem(motionPreferenceKey, enabled ? 'on' : 'off'); } catch (_) { /* ignored */ }
-        }
+        root.classList.toggle('motion-opt-in', enabled);
         if (revealObserver) { revealObserver.disconnect(); revealObserver = null; }
-        if (enabled) {
-            if ('IntersectionObserver' in window) {
-                revealObserver = new IntersectionObserver((entries) => {
-                    for (const entry of entries) {
-                        if (entry.isIntersecting) {
-                            entry.target.classList.add('in-view');
-                            revealObserver?.unobserve(entry.target);
-                        }
-                    }
-                }, { threshold: 0.08, rootMargin: '0px 0px -5% 0px' });
-                revealNodes.forEach((node) => {
-                    if (!node.classList.contains('in-view')) revealObserver.observe(node);
-                });
-            } else {
-                revealNodes.forEach((node) => node.classList.add('in-view'));
-            }
-            requestAnimationFrame(() => requestAnimationFrame(revealVisible));
-        } else {
-            stopAnimatedScroll();
-            revealNodes.forEach((node) => node.classList.add('in-view'));
-            images.forEach((image) => { image.style.removeProperty('--scroll-shift'); image.style.removeProperty('--scroll-rotate'); });
-            const heroElement = document.querySelector('.hero');
-            heroElement?.style.removeProperty('--hero-scroll-lift');
-            heroElement?.style.removeProperty('--hero-word-lift');
-            heroElement?.style.removeProperty('--hero-robot-rotate');
-            root.style.scrollBehavior = '';
-        }
+        if (enabled && 'IntersectionObserver' in window) {
+            revealObserver = new IntersectionObserver(entries => {
+                for (const entry of entries) if (entry.isIntersecting) {
+                    entry.target.classList.add('in-view');
+                    revealObserver.unobserve(entry.target);
+                }
+            }, { threshold: .08, rootMargin: '0px 0px -5% 0px' });
+            revealNodes.forEach(node => { if (!node.classList.contains('in-view')) revealObserver.observe(node); });
+        } else revealNodes.forEach(node => node.classList.add('in-view'));
+        requestAnimationFrame(() => requestAnimationFrame(revealVisible));
         queueScrollMotion();
     }
+    setMotion(true);
 
-    motionControl.addEventListener('click', () => {
-        // An explicit opt-in can override the OS setting; by default the OS is respected.
-        if (!motionEnabled) {
-            revealNodes.forEach((node) => {
-                if (!isOnScreen(node)) node.classList.remove('in-view');
-            });
+    const curtain = document.createElement('div');
+    curtain.className = 'page-curtain';
+    curtain.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(curtain);
+    const transitionKey = 'synapse-v5-navigation';
+    let navigating = false;
+    function enterPage() {
+        navigating = false;
+        root.classList.remove('page-leaving');
+        let arriving = false;
+        try { arriving = sessionStorage.getItem(transitionKey) === '1'; sessionStorage.removeItem(transitionKey); } catch (_) {}
+        if (arriving) {
+            root.classList.add('page-entering');
+            requestAnimationFrame(() => requestAnimationFrame(() => root.classList.remove('page-entering')));
         }
-        setMotion(!motionEnabled, true);
-    });
-    setMotion(motionEnabled);
-    reducedMotion.addEventListener?.('change', () => {
-        let userChoice = null;
-        try { userChoice = localStorage.getItem(motionPreferenceKey); } catch (_) { /* ignored */ }
-        if (!userChoice) setMotion(!reducedMotion.matches);
+    }
+    enterPage();
+    window.addEventListener('pageshow', e => { if (e.persisted) enterPage(); });
+    document.addEventListener('click', e => {
+        if (navigating || e.defaultPrevented || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return;
+        const link = e.target.closest('a[href]');
+        if (!link || link.hasAttribute('download') || (link.target && link.target !== '_self')) return;
+        const target = new URL(link.href, location.href);
+        if (!['http:', 'https:', 'file:'].includes(target.protocol) || target.origin !== location.origin) return;
+        if (target.pathname === location.pathname && target.search === location.search) return;
+        e.preventDefault();
+        navigating = true;
+        closeMenu();
+        root.classList.add('page-leaving');
+        try { sessionStorage.setItem(transitionKey, '1'); } catch (_) {}
+        setTimeout(() => location.assign(target.href), 440);
     });
 
     const progressBar = document.createElement('div');
